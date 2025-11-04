@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Sprout, Send } from "lucide-react";
-import { marketApi, weatherApi } from "@/lib/api";
+// Direct Gemini chat (no local rule hints)
+import { GoogleGenAI } from "@google/genai";
 
 type ChatMessage = {
   id: string;
@@ -28,22 +29,7 @@ export default function FarmerAdviceChat() {
   ]);
   const [isSending, setIsSending] = useState(false);
 
-  // Load latest weather and market snapshot for lightweight, local advice
-  const [weather, setWeather] = useState<any[]>([]);
-  const [market, setMarket] = useState<any[]>([]);
-
-  useEffect(() => {
-    weatherApi
-      .get()
-      .then(setWeather)
-      .catch(() => setWeather([]));
-    marketApi
-      .getAll()
-      .then(setMarket)
-      .catch(() => setMarket([]));
-  }, []);
-
-  const latestWeather = useMemo(() => weather[0], [weather]);
+  // No additional context needed
 
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -65,105 +51,41 @@ export default function FarmerAdviceChat() {
     ]);
   };
 
-  // Very simple rule-based advice engine
-  const generateAdvice = (text: string): string => {
-    const t = text.toLowerCase();
-
-    // Weather-aware hints
-    if (latestWeather) {
-      if (latestWeather.condition === "rainy") {
-        return "Rain expected. Avoid watering fields today and ensure proper drainage.";
-      }
-      if (latestWeather.temperature >= 35) {
-        return "High temperatures today. Water in early morning or evening to reduce evaporation.";
-      }
-      if (latestWeather.condition === "cloudy") {
-        return "Cloudy weather; consider reducing irrigation slightly and monitor soil moisture.";
-      }
-    }
-
-    // Price-aware hints
-    const tomato = market.find(
-      (m) => String(m.itemName).toLowerCase() === "tomato"
-    );
-    if (t.includes("tomato") && tomato) {
-      return Number(tomato.currentPrice) > 150
-        ? "Tomato prices are rising; consider selling within the next two days."
-        : "Tomato prices are stable; monitor the market for a better window.";
-    }
-
-    // Generic intents
-    if (t.includes("pest") || t.includes("spray")) {
-      return "Inspect leaves early morning. Use integrated pest management and avoid spraying before rainfall.";
-    }
-    if (t.includes("fertil") || t.includes("urea") || t.includes("npk")) {
-      return "Apply balanced NPK based on soil tests. Avoid overuse of urea; split doses around irrigation for best uptake.";
-    }
-    if (t.includes("seed") || t.includes("variety")) {
-      return "Choose certified seeds suited to your region and season; ensure proper spacing for better yield.";
-    }
-
-    return "Keep monitoring local prices and weather. Share crop and region for more specific advice.";
-  };
+  // No rule-based advice; Gemini only
 
   // Google Gemini integration (client-side). Uses env var or provided fallback key
   const GEMINI_API_KEY =
     (import.meta as any)?.env?.VITE_GEMINI_API_KEY ||
     "AIzaSyB2S07NxCrbo6VNkhE2INHBwEI1tn5XFx0";
+  const gemini = useMemo(
+    () => new GoogleGenAI({ apiKey: GEMINI_API_KEY }),
+    [GEMINI_API_KEY]
+  );
 
-  const buildPrompt = (userText: string) => {
-    const w = latestWeather
-      ? `Weather context: city=${latestWeather.city || "unknown"}, temp=${
-          latestWeather.temperature
-        }°C, condition=${latestWeather.condition}, humidity=${
-          latestWeather.humidity
-        }%, wind=${latestWeather.windSpeed}km/h.`
-      : "Weather context: unavailable.";
-    const m =
-      market
-        .slice(0, 6)
-        .map(
-          (x) =>
-            `${x.itemName} (${x.itemType || "item"}) in ${x.region}: PKR ${
-              x.currentPrice
-            }/${x.unit || "kg"}`
-        )
-        .join("; ") || "No market items available.";
-    const system = `You are Smart Farmer, a concise agricultural assistant for Pakistani farmers. Use the provided weather and market context. Reply in 1-3 short sentences with practical advice. Avoid medical/chemical specifics; give safe, general guidance.`;
-    const instruction = `User question: ${userText}`;
-    return `${system}\n${w}\nMarket context: ${m}\n${instruction}`;
+  const buildContents = (history: ChatMessage[], userText: string) => {
+    const prior = history.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+    return [...prior, { role: "user", parts: [{ text: userText }] }];
   };
 
   const askGemini = async (text: string): Promise<string> => {
     try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: buildPrompt(text) }],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!resp.ok) {
-        throw new Error(`Gemini API error ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      const textOut = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const response = await gemini.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: buildContents(messages, text),
+      });
+      const textOut =
+        (response as any)?.text ||
+        (response as any)?.output_text ||
+        (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (typeof textOut === "string" && textOut.trim().length > 0)
         return textOut.trim();
-      return generateAdvice(text); // fallback to rule-based if output missing
+      return "Sorry, I couldn't generate a reply. Please try again.";
     } catch (e: any) {
       console.error("Gemini request failed", e);
-      return generateAdvice(text);
+      return "Sorry, I couldn't reach the AI service. Please try again.";
     }
   };
 
