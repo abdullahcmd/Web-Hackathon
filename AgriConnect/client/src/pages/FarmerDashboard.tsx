@@ -14,13 +14,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TrendingDown, TrendingUp, Sprout } from "lucide-react";
-import { marketApi, weatherApi, priceHistoryApi, type MarketData } from "@/lib/api";
+import {
+  marketApi,
+  weatherApi,
+  priceHistoryApi,
+  type MarketData,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
 export default function FarmerDashboard() {
   const [, navigate] = useLocation();
-  const [selectedItem, setSelectedItem] = useState<{ name: string; region: string } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{
+    name: string;
+    region: string;
+  } | null>(null);
+  const [isUrdu, setIsUrdu] = useState(false);
 
   const { data: marketData = [], isLoading } = useQuery({
     queryKey: ["/api/market-data"],
@@ -54,13 +63,19 @@ export default function FarmerDashboard() {
   const avgPrice =
     marketData.length > 0
       ? Math.round(
-          marketData.reduce((sum, item) => sum + parseFloat(item.currentPrice), 0) /
-            marketData.length
+          marketData.reduce(
+            (sum, item) => sum + parseFloat(item.currentPrice),
+            0
+          ) / marketData.length
         )
       : 0;
 
-  const priceIncreases = tableData.filter((item) => item.currentPrice > item.previousPrice).length;
-  const priceDecreases = tableData.filter((item) => item.currentPrice < item.previousPrice).length;
+  const priceIncreases = tableData.filter(
+    (item) => item.currentPrice > item.previousPrice
+  ).length;
+  const priceDecreases = tableData.filter(
+    (item) => item.currentPrice < item.previousPrice
+  ).length;
 
   const multiCropItems = ["Tomato", "Potato", "Onion"];
   const multiCropData: PriceDataPoint[] = [];
@@ -73,9 +88,49 @@ export default function FarmerDashboard() {
   };
 
   const chartData: PriceDataPoint[] = priceHistory.map((h) => ({
-    date: new Date(h.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    date: new Date(h.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
     price: parseFloat(h.price),
   }));
+
+  // Urdu localization for market list items (showcase only)
+  const urduItemMap: Record<string, string> = {
+    Tomato: "ٹماٹر",
+    Potato: "آلو",
+    Onion: "پیاز",
+    Mango: "آم",
+    Apple: "سیب",
+    Carrot: "گاجر",
+  };
+  const urduTypeMap: Record<string, string> = {
+    vegetable: "سبزی",
+    fruit: "پھل",
+  };
+  const urduRegionMap: Record<string, string> = {
+    Punjab: "پنجاب",
+    Sindh: "سندھ",
+    KPK: "خیبر پختونخوا",
+    Balochistan: "بلوچستان",
+  };
+  const urduUnitMap: Record<string, string> = {
+    kg: "کلو",
+    Kg: "کلو",
+    KG: "کلو",
+  };
+
+  const localizedTableData = isUrdu
+    ? tableData.map((row) => ({
+        ...row,
+        itemName: urduItemMap[row.itemName] || row.itemName,
+        itemType:
+          urduTypeMap[row.itemType?.toLowerCase?.() || row.itemType] ||
+          row.itemType,
+        region: urduRegionMap[row.region] || row.region,
+        unit: urduUnitMap[row.unit] ? `${urduUnitMap[row.unit]}` : row.unit,
+      }))
+    : tableData;
 
   return (
     <div className="min-h-screen bg-background">
@@ -84,47 +139,85 @@ export default function FarmerDashboard() {
       <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold">Farmer Dashboard</h1>
+            <h1 className="text-3xl font-bold">
+              {isUrdu ? "کاشتکار ڈیش بورڈ" : "Farmer Dashboard"}
+            </h1>
             <p className="text-muted-foreground mt-1">
-              View market rates, weather updates, and price trends
+              {isUrdu
+                ? "مارکیٹ ریٹس، موسم کی تازہ کاری اور قیمتوں کے رجحانات دیکھیں"
+                : "View market rates, weather updates, and price trends"}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate("/farmer/advice")} data-testid="button-open-advice">
-              Smart Farmer Advice
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              onClick={() => setIsUrdu((v) => !v)}
+              data-testid="button-toggle-language"
+            >
+              {isUrdu ? "Switch to English" : "اردو میں دیکھیں"}
             </Button>
-            <Button variant="secondary" onClick={() => navigate("/farmer/community")} data-testid="button-open-community">
-              Community Forum
+            <Button
+              onClick={() => navigate("/farmer/advice")}
+              data-testid="button-open-advice"
+            >
+              {isUrdu ? "سمارٹ کسان مشورہ" : "Smart Farmer Advice"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/farmer/community")}
+              data-testid="button-open-community"
+            >
+              {isUrdu ? "کمیونٹی فورم" : "Community Forum"}
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatsCard label="Average Price" value={`PKR ${avgPrice}`} icon={Sprout} />
-          <StatsCard label="Price Increases" value={priceIncreases} icon={TrendingUp} />
-          <StatsCard label="Price Decreases" value={priceDecreases} icon={TrendingDown} />
+          <StatsCard
+            label={isUrdu ? "اوسط قیمت" : "Average Price"}
+            value={`PKR ${avgPrice}`}
+            icon={Sprout}
+          />
+          <StatsCard
+            label={isUrdu ? "قیمت میں اضافہ" : "Price Increases"}
+            value={priceIncreases}
+            icon={TrendingUp}
+          />
+          <StatsCard
+            label={isUrdu ? "قیمت میں کمی" : "Price Decreases"}
+            value={priceDecreases}
+            icon={TrendingDown}
+          />
         </div>
 
         <Tabs defaultValue="prices" className="space-y-6">
           <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3">
             <TabsTrigger value="prices" data-testid="tab-prices">
-              Market Prices
+              {isUrdu ? "مارکیٹ قیمتیں" : "Market Prices"}
             </TabsTrigger>
             <TabsTrigger value="weather" data-testid="tab-weather">
-              Weather
+              {isUrdu ? "موسم" : "Weather"}
             </TabsTrigger>
             <TabsTrigger value="trends" data-testid="tab-trends">
-              Price Trends
+              {isUrdu ? "قیمتوں کے رجحانات" : "Price Trends"}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="prices" className="space-y-6">
             {isLoading ? (
               <Card className="p-12 text-center">
-                <p className="text-muted-foreground">Loading market data...</p>
+                <p className="text-muted-foreground">
+                  {isUrdu
+                    ? "مارکیٹ ڈیٹا لوڈ ہو رہا ہے..."
+                    : "Loading market data..."}
+                </p>
               </Card>
             ) : (
-              <PriceTable data={tableData} isAdmin={false} onViewTrend={handleViewTrend} />
+              <PriceTable
+                data={localizedTableData}
+                isAdmin={false}
+                onViewTrend={handleViewTrend}
+              />
             )}
           </TabsContent>
 
@@ -139,7 +232,9 @@ export default function FarmerDashboard() {
           <TabsContent value="trends" className="space-y-6">
             <Card className="p-6">
               <p className="text-muted-foreground text-center">
-                Click on any item's trend icon in the Market Prices tab to view its 7-day price trend
+                {isUrdu
+                  ? "7 دن کا رجحان دیکھنے کے لیے مارکیٹ قیمتوں میں آئٹم کے آئیکن پر کلک کریں"
+                  : "Click on any item's trend icon in the Market Prices tab to view its 7-day price trend"}
               </p>
             </Card>
           </TabsContent>
