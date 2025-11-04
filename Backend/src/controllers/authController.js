@@ -1,5 +1,5 @@
-const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
+const User = require("../models/User");
+const generateToken = require("../utils/generateToken");
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -13,16 +13,24 @@ exports.register = async (req, res, next) => {
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email',
+        message: "User already exists with this email",
       });
     }
 
-    // Create user
+    // Enforce farmer-only self registration
+    if (role && role.toLowerCase() === "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only farmer accounts can be created via public registration",
+      });
+    }
+
+    // Create user as farmer regardless of provided role
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'farmer',
+      role: "farmer",
       region,
     });
 
@@ -40,7 +48,7 @@ exports.register = async (req, res, next) => {
         },
         token,
       },
-      message: 'User registered successfully',
+      message: "User registered successfully",
     });
   } catch (error) {
     next(error);
@@ -58,17 +66,17 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password',
+        message: "Please provide email and password",
       });
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: "Invalid credentials",
       });
     }
 
@@ -78,7 +86,7 @@ exports.login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: "Invalid credentials",
       });
     }
 
@@ -96,7 +104,7 @@ exports.login = async (req, res, next) => {
         },
         token,
       },
-      message: 'Login successful',
+      message: "Login successful",
     });
   } catch (error) {
     next(error);
@@ -126,4 +134,3 @@ exports.getMe = async (req, res, next) => {
     next(error);
   }
 };
-
