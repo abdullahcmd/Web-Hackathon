@@ -9,12 +9,9 @@ const User = require('../models/User');
 
 async function run() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/agriculture-market';
-  await mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect(uri);
 
-  const email = process.env.SEED_ADMIN_EMAIL || 'admin';
+  const email = process.env.SEED_ADMIN_EMAIL || 'admin@example.com';
   const password = process.env.SEED_ADMIN_PASSWORD || 'admin123';
   const name = process.env.SEED_ADMIN_NAME || 'Admin';
 

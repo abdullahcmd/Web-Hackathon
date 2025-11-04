@@ -4,7 +4,7 @@ Create a `.env` file in the root directory with the following variables:
 
 ```env
 # Server Configuration
-PORT=5000
+PORT=3000
 NODE_ENV=development
 
 # MongoDB Connection
