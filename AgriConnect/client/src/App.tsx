@@ -11,6 +11,7 @@ import CreateAccount from "@/pages/CreateAccount";
 import AdminDashboard from "@/pages/AdminDashboard";
 import FarmerDashboard from "@/pages/FarmerDashboard";
 import FarmerAdviceChat from "@/pages/FarmerAdviceChat";
+import FarmerCommunity from "@/pages/FarmerCommunity";
 
 function AppRouter() {
   return (
@@ -23,6 +24,7 @@ function AppRouter() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/farmer" component={FarmerDashboard} />
       <Route path="/farmer/advice" component={FarmerAdviceChat} />
+      <Route path="/farmer/community" component={FarmerCommunity} />
 
       {/* Redirect base route to login */}
       <Route path="/">

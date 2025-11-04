@@ -89,9 +89,14 @@ export default function FarmerDashboard() {
               View market rates, weather updates, and price trends
             </p>
           </div>
-          <Button onClick={() => navigate("/farmer/advice")} data-testid="button-open-advice">
-            Smart Farmer Advice
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/farmer/advice")} data-testid="button-open-advice">
+              Smart Farmer Advice
+            </Button>
+            <Button variant="secondary" onClick={() => navigate("/farmer/community")} data-testid="button-open-community">
+              Community Forum
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
