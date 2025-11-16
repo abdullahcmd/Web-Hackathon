@@ -196,12 +196,6 @@ export default function Login() {
             >
               Create Account
             </Button>
-
-            <div className="text-sm text-center text-muted-foreground mt-4">
-              <p>Demo credentials:</p>
-              <p className="mt-1">Admin: admin / admin123</p>
-              <p>Farmer: farmer / farmer123</p>
-            </div>
           </form>
         </Card>
       </div>
