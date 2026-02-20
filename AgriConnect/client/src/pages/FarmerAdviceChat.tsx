@@ -56,7 +56,7 @@ export default function FarmerAdviceChat() {
   // Google Gemini integration (client-side). Uses env var or provided fallback key
   const GEMINI_API_KEY =
     (import.meta as any)?.env?.VITE_GEMINI_API_KEY ||
-    "AIzaSyB2S07NxCrbo6VNkhE2INHBwEI1tn5XFx0";
+    "Your-API Key";
   const gemini = useMemo(
     () => new GoogleGenAI({ apiKey: GEMINI_API_KEY }),
     [GEMINI_API_KEY]
